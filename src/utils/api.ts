@@ -1,7 +1,7 @@
 import axios, { AxiosHeaders } from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8000/api",
+  baseURL: import.meta.env.REACT_APP_API_URL,
 });
 
 // Read accessToken from Zustand persisted storage (key: "auth-storage").
