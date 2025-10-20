@@ -30,26 +30,32 @@ const mapSupabaseUser = (user: SupabaseUser | null): AppUser | null => {
   const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
   const appMetadata = (user.app_metadata ?? {}) as Record<string, unknown>;
 
+  // Determina il ruolo in ordine di priorità
   const derivedRole =
     (metadata.role as string | undefined) ??
-    (Array.isArray(appMetadata.roles) ? (appMetadata.roles as string[])[0] : undefined) ??
+    (Array.isArray(appMetadata.roles)
+      ? (appMetadata.roles as string[])[0]
+      : undefined) ??
     (appMetadata.role as string | undefined) ??
-    (user.role === "authenticated" ? "user" : user.role ?? undefined);
+    // In Supabase, "authenticated" è uno status, non un ruolo: quindi impostiamo "user" di default
+    (user.role === "authenticated" ? "user" : (user.role as string | undefined)) ??
+    "user"; // fallback finale
 
+  // Determina il nome in modo più flessibile
   const derivedName =
     (metadata.name as string | undefined) ??
     (metadata.full_name as string | undefined) ??
     (metadata.display_name as string | undefined) ??
-    (user.email ? user.email.split("@")[0] : undefined) ??
-    null;
+    (user.email ? user.email.split("@")[0] : null);
 
   return {
     id: user.id,
-    name: derivedName,
+    name: derivedName ?? "Utente",
     email: user.email ?? null,
-    role: derivedRole ?? null,
+    role: derivedRole,
   };
 };
+
 
 const updateStateFromSession = (session: Session | null) => {
   const mappedUser = mapSupabaseUser(session?.user ?? null);

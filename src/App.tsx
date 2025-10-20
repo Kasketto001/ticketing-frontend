@@ -8,7 +8,8 @@ import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
 import TicketsPage from "@/pages/TicketsPage";
 import TicketDetailPage from "@/pages/TicketDetailPage";
-
+import TicketCreatePage from "./pages/TicketCreatePage";
+import { Toaster } from "sonner";
 // 🔒 Componente per proteggere le route private
 function PrivateRoute({ children }: { children: React.ReactElement }) {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -68,6 +69,7 @@ export default function App() {
   return (
     <ThemeProvider defaultTheme="system">
       <BrowserRouter>
+        <Toaster position="top-right" richColors />
         <Routes>
           {/* LOGIN */}
           <Route
@@ -107,6 +109,14 @@ export default function App() {
             element={
               <PrivateRoute>
                 <TicketDetailPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/tickets/new"
+            element={
+              <PrivateRoute>
+                <TicketCreatePage />
               </PrivateRoute>
             }
           />
