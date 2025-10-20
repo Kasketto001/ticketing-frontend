@@ -7,8 +7,8 @@ import TicketDetailPage from "./pages/TicketDetailPage";
 import { ThemeProvider } from "./components/theme-provider-";
 
 function PrivateRoute({ children }: { children: React.ReactElement }) {
-  const { accessToken } = useAuthStore();
-  return accessToken ? children : <Navigate to="/login" replace />;
+  const { isAuthenticated } = useAuthStore();
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
 }
 
 export default function App() {

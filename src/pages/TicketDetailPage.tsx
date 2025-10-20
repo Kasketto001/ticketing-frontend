@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
-import api from "../utils/api";
 import {
   Card,
   CardHeader,
@@ -12,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "../utils/supabaseClient";
 
 interface Ticket {
   id: number;
@@ -26,35 +26,59 @@ export default function TicketDetailPage() {
   const { id } = useParams();
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { accessToken } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchTicket = async () => {
       try {
         if (!id) return;
-        const res = await api.get(`/tickets/${id}`, {
-          headers: accessToken
-            ? { Authorization: `Bearer ${accessToken}` }
-            : undefined,
-        });
-        const payload = res.data?.data ?? res.data;
-        setTicket(payload);
-        setError(null);
-      } catch (err: any) {
-        const status = err?.response?.status;
-        if (status === 403) {
-          setError("Non hai i permessi per visualizzare questo ticket.");
-        } else if (status === 404) {
-          navigate("/tickets", { replace: true });
-        } else {
-          console.error("Errore nel caricamento ticket:", err);
-          setError("Si è verificato un errore durante il caricamento.");
+        if (!isAuthenticated) {
+          setTicket(null);
+          return;
         }
+
+        const numericId = Number(id);
+        if (Number.isNaN(numericId)) {
+          setError("Identificativo ticket non valido.");
+          return;
+        }
+
+        const { data, error: supabaseError } = await supabase
+          .from("tickets")
+          .select("id, title, description, status, priority, created_at")
+          .eq("id", numericId)
+          .maybeSingle();
+
+        if (supabaseError) {
+          const status = supabaseError.status;
+          if (status === 403) {
+            setError("Non hai i permessi per visualizzare questo ticket.");
+            return;
+          }
+          if (status === 404) {
+            navigate("/tickets", { replace: true });
+            return;
+          }
+          console.error("Errore nel caricamento ticket:", supabaseError);
+          setError("Si è verificato un errore durante il caricamento.");
+          return;
+        }
+
+        if (!data) {
+          navigate("/tickets", { replace: true });
+          return;
+        }
+
+        setTicket(data as Ticket);
+        setError(null);
+      } catch (err) {
+        console.error("Errore nel caricamento ticket:", err);
+        setError("Si è verificato un errore durante il caricamento.");
       }
     };
     fetchTicket();
-  }, [id, accessToken, navigate]);
+  }, [id, isAuthenticated, navigate]);
 
   if (error)
     return (
